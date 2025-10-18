@@ -5,6 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Resume } from '@/types/resume';
 import { saveResume } from '@/services/api';
 import { toast } from '@/hooks/use-toast';
+import { jsPDF } from 'jspdf';
 
 interface ResumeActionsProps {
   resume: Resume;
@@ -34,20 +35,79 @@ const ResumeActions: React.FC<ResumeActionsProps> = ({ resume }) => {
     }
   };
 
-  const handleDownload = () => {
-    const dataStr = JSON.stringify(resume, null, 2);
-    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+  const handleDownloadPDF = () => {
+    const doc = new jsPDF();
+    let yPosition = 20;
+    const lineHeight = 7;
+    const pageHeight = doc.internal.pageSize.height;
+    const margin = 20;
+
+    // Helper function to add text with page break handling
+    const addText = (text: string, fontSize: number = 11, isBold: boolean = false) => {
+      if (yPosition > pageHeight - margin) {
+        doc.addPage();
+        yPosition = 20;
+      }
+      doc.setFontSize(fontSize);
+      doc.setFont('helvetica', isBold ? 'bold' : 'normal');
+      doc.text(text, 20, yPosition);
+      yPosition += lineHeight;
+    };
+
+    // Personal Information
+    addText(resume.personalInfo.fullName, 18, true);
+    if (resume.personalInfo.email) addText(resume.personalInfo.email);
+    if (resume.personalInfo.phone) addText(resume.personalInfo.phone);
+    if (resume.personalInfo.location) addText(resume.personalInfo.location);
+    yPosition += 5;
     
-    const exportFileDefaultName = `resume_${resume.personalInfo.fullName.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.json`;
-    
-    const linkElement = document.createElement('a');
-    linkElement.setAttribute('href', dataUri);
-    linkElement.setAttribute('download', exportFileDefaultName);
-    linkElement.click();
+    if (resume.personalInfo.summary) {
+      addText('PROFESSIONAL SUMMARY', 14, true);
+      const summaryLines = doc.splitTextToSize(resume.personalInfo.summary, 170);
+      summaryLines.forEach((line: string) => addText(line));
+      yPosition += 5;
+    }
+
+    // Experience
+    if (resume.experience.length > 0) {
+      addText('WORK EXPERIENCE', 14, true);
+      resume.experience.forEach((exp) => {
+        addText(`${exp.position} at ${exp.company}`, 12, true);
+        addText(`${exp.startDate} - ${exp.endDate || 'Present'}`);
+        if (exp.description) {
+          const descLines = doc.splitTextToSize(exp.description, 170);
+          descLines.forEach((line: string) => addText(line));
+        }
+        yPosition += 3;
+      });
+      yPosition += 2;
+    }
+
+    // Education
+    if (resume.education.length > 0) {
+      addText('EDUCATION', 14, true);
+      resume.education.forEach((edu) => {
+        addText(`${edu.degree} in ${edu.field}`, 12, true);
+        addText(`${edu.institution} (${edu.endDate})`);
+        yPosition += 3;
+      });
+      yPosition += 2;
+    }
+
+    // Skills
+    if (resume.skills.length > 0) {
+      addText('SKILLS', 14, true);
+      const skillsText = resume.skills.map(s => s.name).join(', ');
+      const skillsLines = doc.splitTextToSize(skillsText, 170);
+      skillsLines.forEach((line: string) => addText(line));
+    }
+
+    const fileName = `${resume.personalInfo.fullName.replace(/\s+/g, '_')}_Resume_${new Date().toISOString().split('T')[0]}.pdf`;
+    doc.save(fileName);
     
     toast({
-      title: "Download started!",
-      description: "Your resume is being downloaded as a JSON file.",
+      title: "PDF downloaded!",
+      description: "Your ATS-friendly resume has been downloaded.",
     });
   };
 
@@ -63,11 +123,11 @@ const ResumeActions: React.FC<ResumeActionsProps> = ({ resume }) => {
             {isSaving ? 'Saving...' : '💾 Save Resume'}
           </Button>
           <Button
-            onClick={handleDownload}
+            onClick={handleDownloadPDF}
             variant="outline"
             className="border-blue-600 text-blue-600 hover:bg-blue-50 flex-1 sm:flex-none"
           >
-            📄 Download JSON
+            📄 Download PDF
           </Button>
         </div>
       </CardContent>
