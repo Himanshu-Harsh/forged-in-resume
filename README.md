@@ -2,15 +2,11 @@
 
 ## Project info
 
-**URL**: https://lovable.dev/projects/2e9fae98-fb5c-4224-922a-02cb4e770d03
+**URL**: https://forged-in-resume.lovable.app/
 
 ## How can I edit this code?
 
 There are several ways of editing your application.
-
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/2e9fae98-fb5c-4224-922a-02cb4e770d03) and start prompting.
 
 Changes made via Lovable will be committed automatically to this repo.
 
